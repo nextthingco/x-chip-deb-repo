@@ -39,6 +39,15 @@ jobs:
           echo "run_id=$run_id" >> "$GITHUB_OUTPUT"
 
       # get kernel debs
+      - name: Mint app token
+        id: app-token
+        uses: actions/create-github-app-token@v1
+        with:
+          app-id: ${{ secrets.APP_ID }}
+          private-key: ${{ secrets.APP_PRIVATE_KEY }}
+          owner: nextthingco
+          repositories: x-chip-linux-deb
+
       - name: Download kernel debs
         uses: actions/download-artifact@v4
         with:
@@ -46,7 +55,7 @@ jobs:
           path: debs
           repository: nextthingco/x-chip-linux-deb
           run-id: ${{ steps.src.outputs.run_id }}
-          github-token: ${{ secrets.SOURCE_REPO_TOKEN }}
+          github-token: ${{ steps.app-token.outputs.token }}
 
       - name: Install reprepro
         run: sudo apt-get update && sudo apt-get install -y reprepro
