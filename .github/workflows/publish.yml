@@ -1,0 +1,93 @@
+name: publish-apt-repo
+
+# triggered by x-chip-linux-deb to rebuild and deploy to github pages
+# todo, also pull in chip and pocketchip userspace packages
+
+on:
+  repository_dispatch:
+    types: [kernel-debs]
+  workflow_dispatch:
+    inputs:
+      run_id:
+        description: "x-chip-linux-deb run id to pull the kernel debs"
+        required: true
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+# only run one at a time
+concurrency:
+  group: pages
+  cancel-in-progress: false
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deploy.outputs.page_url }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Resolve source run id
+        id: src
+        run: |
+          run_id="${{ github.event.client_payload.run_id }}"
+          [ -n "$run_id" ] || run_id="${{ github.event.inputs.run_id }}"
+          echo "run_id=$run_id" >> "$GITHUB_OUTPUT"
+
+      # get kernel debs
+      - name: Download kernel debs
+        uses: actions/download-artifact@v4
+        with:
+          name: kernel-debs
+          path: debs
+          repository: nextthingco/x-chip-linux-deb
+          run-id: ${{ steps.src.outputs.run_id }}
+          github-token: ${{ secrets.SOURCE_REPO_TOKEN }}
+
+      - name: Install reprepro
+        run: sudo apt-get update && sudo apt-get install -y reprepro
+
+      # import private key
+      - name: Import GPG signing key
+        uses: crazy-max/ghaction-import-gpg@v6
+        with:
+          gpg_private_key: ${{ secrets.GPG_PRIVATE_KEY }}
+          passphrase: ${{ secrets.GPG_PASSPHRASE }}
+
+      # fresh rebuild of the repo each run
+      - name: Build the apt repo
+        run: |
+          cd trixie
+          reprepro -b . includedeb trixie ../debs/*.deb
+          reprepro -b . list trixie
+
+      - name: Assemble Pages site
+        run: |
+          mkdir -p public/trixie
+          cp -r trixie/dists trixie/pool public/trixie/
+          cp trixie/public.key public/trixie/public.key
+          cat > public/index.html <<'EOF'
+          <!doctype html><meta charset="utf-8">
+          <title>x-chip-deb-repo</title>
+          <h1>CHIP kernel apt repo</h1>
+          <p>Add the key, then the source:</p>
+          <pre>
+          curl -fsSL https://nextthingco.github.io/x-chip-deb-repo/trixie/public.key \
+            | sudo tee /usr/share/keyrings/chip.asc >/dev/null
+          echo 'deb [signed-by=/usr/share/keyrings/chip.asc] https://nextthingco.github.io/x-chip-deb-repo/trixie trixie main' \
+            | sudo tee /etc/apt/sources.list.d/chip.list
+          </pre>
+          EOF
+
+      - name: Upload Pages artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: public
+
+      - name: Deploy to GitHub Pages
+        id: deploy
+        uses: actions/deploy-pages@v4
