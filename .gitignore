@@ -1,0 +1,14 @@
+# build scratch (build.sh / CI)
+/dcache/
+/debs/
+/public/
+
+# reprepro state generated at publish time (conf/ + public.key stay tracked)
+/trixie/db/
+/trixie/dists/
+/trixie/pool/
+
+# stray build artifacts from userspace dpkg-buildpackage (land in packages/)
+/packages/*.deb
+/packages/*.buildinfo
+/packages/*.changes

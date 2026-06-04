@@ -1,16 +1,16 @@
 name: publish-apt-repo
 
-# triggered by x-chip-linux-deb to rebuild and deploy to github pages
-# todo, also pull in chip and pocketchip userspace packages
+# Build every package from the submodules under packages/, run reprepro, and
+# deploy the signed apt repo to GitHub Pages.
+#
+# Trigger model: this runs on push to this repo. Bumping a submodule pointer
+# (the only way a package update reaches here) is a commit + push, which kicks
+# the build -- so the package repos themselves do NOT need to dispatch anything.
 
 on:
-  repository_dispatch:
-    types: [kernel-debs]
+  push:
+    branches: [ master, main ]
   workflow_dispatch:
-    inputs:
-      run_id:
-        description: "x-chip-linux-deb run id to pull the kernel debs"
-        required: true
 
 permissions:
   contents: read
@@ -29,16 +29,10 @@ jobs:
       name: github-pages
       url: ${{ steps.deploy.outputs.page_url }}
     steps:
-      - uses: actions/checkout@v4
-
-      - name: Resolve source run id
-        id: src
-        run: |
-          run_id="${{ github.event.client_payload.run_id }}"
-          [ -n "$run_id" ] || run_id="${{ github.event.inputs.run_id }}"
-          echo "run_id=$run_id" >> "$GITHUB_OUTPUT"
-
-      # get kernel debs
+      # Token for cloning the (private) submodule repos during checkout. The
+      # org-owned app must be installed on every submodule repo; with no
+      # `repositories:` the token covers all repos the app is installed on, so
+      # new packages need no workflow change here.
       - name: Mint app token
         id: app-token
         uses: actions/create-github-app-token@v1
@@ -46,28 +40,41 @@ jobs:
           app-id: ${{ secrets.APP_ID }}
           private-key: ${{ secrets.APP_PRIVATE_KEY }}
           owner: nextthingco
-          repositories: x-chip-linux-deb
 
-      - name: Download kernel debs
-        uses: actions/download-artifact@v4
+      - uses: actions/checkout@v4
         with:
-          name: kernel-debs
-          path: debs
-          repository: nextthingco/x-chip-linux-deb
-          run-id: ${{ steps.src.outputs.run_id }}
-          github-token: ${{ steps.app-token.outputs.token }}
+          submodules: recursive
+          token: ${{ steps.app-token.outputs.token }}
+
+      # arm/v7 emulation so the shared userspace image can build natively.
+      - uses: docker/setup-qemu-action@v3
+
+      # Per-package .deb cache, keyed inside dcache/ by each submodule's HEAD sha
+      # (build.sh handles the per-package logic). Evolving-cache pattern: a unique
+      # key each run so the post-step always saves the updated dcache, with a
+      # prefix restore-key to seed from the most recent prior run. Result: only
+      # packages whose submodule pointer moved get rebuilt.
+      - name: Restore/seed deb cache
+        uses: actions/cache@v4
+        with:
+          path: dcache
+          key: dcache-${{ github.run_id }}
+          restore-keys: |
+            dcache-
+
+      - name: Build all packages
+        run: ./build.sh
 
       - name: Install reprepro
         run: sudo apt-get update && sudo apt-get install -y reprepro
 
-      # import private key
       - name: Import GPG signing key
         uses: crazy-max/ghaction-import-gpg@v6
         with:
           gpg_private_key: ${{ secrets.GPG_PRIVATE_KEY }}
           passphrase: ${{ secrets.GPG_PASSPHRASE }}
 
-      # fresh rebuild of the repo each run
+      # Fresh rebuild of the repo each run from the freshly-built debs.
       - name: Build the apt repo
         run: |
           cd trixie
@@ -82,7 +89,7 @@ jobs:
           cat > public/index.html <<'EOF'
           <!doctype html><meta charset="utf-8">
           <title>x-chip-deb-repo</title>
-          <h1>CHIP kernel apt repo</h1>
+          <h1>CHIP apt repo</h1>
           <p>Add the key, then the source:</p>
           <pre>
           curl -fsSL https://nextthingco.github.io/x-chip-deb-repo/trixie/public.key \

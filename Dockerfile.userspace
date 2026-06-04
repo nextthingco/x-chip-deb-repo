@@ -1,0 +1,16 @@
+# Shared build image for the simple userspace .debs (chip-power, chip-hwtest,
+# chip-dt-overlays, ...). Built as linux/arm/v7 so packages compile natively
+# under emulation -- no cross-toolchain or cross build-deps to wrangle. Each
+# package's own Build-Depends are installed per-build via `apt-get build-dep`.
+#
+# (The kernel does NOT use this image -- x-chip-linux-deb keeps its own amd64
+# cross-compile Makefile + Dockerfile, because cross is far faster for a kernel.)
+FROM debian:trixie
+
+RUN apt-get update && apt-get install -y --no-install-recommends \
+        build-essential \
+        debhelper \
+        dpkg-dev \
+        devscripts \
+        ca-certificates \
+    && rm -rf /var/lib/apt/lists/*

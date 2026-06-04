@@ -1,0 +1,12 @@
+[submodule "packages/x-chip-linux-deb"]
+	path = packages/x-chip-linux-deb
+	url = git@github.com:nextthingco/x-chip-linux-deb
+[submodule "packages/chip-power"]
+	path = packages/chip-power
+	url = git@github.com:nextthingco/chip-power
+[submodule "packages/chip-hwtest"]
+	path = packages/chip-hwtest
+	url = git@github.com:nextthingco/chip-hwtest
+[submodule "packages/chip-dt-overlays"]
+	path = packages/chip-dt-overlays
+	url = git@github.com:nextthingco/chip-dt-overlays
