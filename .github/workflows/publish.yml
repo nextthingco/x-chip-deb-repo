@@ -64,6 +64,13 @@ jobs:
 
       - name: Build all packages
         run: ./build.sh
+        env:
+          # Serial appended to the kernel package version (linux-build-deb.sh ->
+          # 6.12.86-1.<CHIP_BUILD_ID>). The CI run number is monotonic, so every
+          # rebuild produces an upgradable version. build.sh's `make -C` inherits
+          # this from the env; the Makefile's git-commit-epoch default is only the
+          # local-build fallback.
+          CHIP_BUILD_ID: ${{ github.run_number }}
 
       - name: Install reprepro
         run: sudo apt-get update && sudo apt-get install -y reprepro
