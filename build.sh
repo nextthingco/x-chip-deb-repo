@@ -22,7 +22,7 @@ DCACHE="$HERE/dcache"; mkdir -p "$DCACHE"
 
 # Userspace submodules (kebab-case dirs). Missing ones are skipped, so this can
 # name repos that aren't wired up yet.
-USERSPACE="chip-power chip-hwtest chip-dt-overlays"
+USERSPACE="chip-power chip-hwtest chip-dt-overlays pocketchip-configs pocketchip-batt pocketchip-load pocketchip-onboard"
 
 USERSPACE_IMAGE_BUILT=
 

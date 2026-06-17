@@ -10,3 +10,18 @@
 [submodule "packages/chip-dt-overlays"]
 	path = packages/chip-dt-overlays
 	url = git@github.com:nextthingco/chip-dt-overlays
+[submodule "packages/pocketchip-configs"]
+	path = packages/pocketchip-configs
+	url = git@github.com:nextthingco/pocketchip-configs
+[submodule "packages/pocketchip-batt"]
+	path = packages/pocketchip-batt
+	url = git@github.com:nextthingco/pocketchip-batt
+[submodule "packages/pocketchip-load"]
+	path = packages/pocketchip-load
+	url = git@github.com:nextthingco/pocketchip-load
+[submodule "packages/pocketchip-onboard"]
+	path = packages/pocketchip-onboard
+	url = git@github.com:nextthingco/pocketchip-onboard
+[submodule "packages/PocketCHIP-pocket-home"]
+	path = packages/PocketCHIP-pocket-home
+	url = git@github.com:nextthingco/PocketCHIP-pocket-home
