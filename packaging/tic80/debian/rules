@@ -1,0 +1,24 @@
+#!/usr/bin/make -f
+
+# Build TIC-80 against the SYSTEM SDL2 + mesa GLES2/EGL (SDLGPU renderer). On the
+# CHIP that resolves to lima/Mali400 -- NOT upstream's rpi.deb, which links the
+# legacy Broadcom GLES stack (/opt/vc, libbrcmEGL/GLESv2) and won't load here.
+
+%:
+	dh $@ --buildsystem=cmake
+
+override_dh_auto_configure:
+	dh_auto_configure -- \
+		-DCMAKE_BUILD_TYPE=Release \
+		-DBUILD_PRO=OFF \
+		-DBUILD_WITH_ALL=ON \
+		-DCMAKE_C_FLAGS_RELEASE="-Ofast -flto" \
+		-DCMAKE_CXX_FLAGS_RELEASE="-Ofast -flto" \
+		-DBUILD_SDL=ON \
+		-DBUILD_SDLGPU=ON \
+		-DUSE_GLES2=ON \
+		-DUSE_EGL=ON \
+		-DBUILD_EDITORS=ON \
+		-DBUILD_SURF=ON \
+		-DPREFER_SYSTEM_SDL2=ON \
+		-DBUILD_STATIC=ON

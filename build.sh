@@ -22,16 +22,32 @@ DCACHE="$HERE/dcache"; mkdir -p "$DCACHE"
 
 # Userspace submodules (kebab-case dirs). Missing ones are skipped, so this can
 # name repos that aren't wired up yet.
-USERSPACE="chip-power chip-hwtest chip-dt-overlays pocketchip-configs pocketchip-batt pocketchip-load pocketchip-onboard"
+# PocketCHIP-pocket-home is kept LAST: JUCE 4.1.0 vs gcc-14 may still need compile
+# fixes, and this script is `set -e` -- a failure aborts the run, so keeping it
+# last means every other package is already built + collected in ./debs first.
+# Heads up: while pocket-home fails to build, a CI run of this script also aborts
+# before reprepro, so don't push to CI until it builds clean locally.
+USERSPACE="chip-power chip-hwtest chip-dt-overlays pocketchip-configs pocketchip-batt pocketchip-load pocketchip-onboard tic80 PocketCHIP-pocket-home"
 
 USERSPACE_IMAGE_BUILT=
 
 # $1 = package dir name under packages/ ; $2 = "kernel" | "userspace"
 build_pkg() {
-    local pkg="$1" kind="$2" sha slot
+    local pkg="$1" kind="$2" sha slot overlay
     [ -d "packages/$pkg" ] || { echo ">> skip $pkg (submodule not present)"; return; }
 
     sha=$(git -C "packages/$pkg" rev-parse HEAD)
+
+    # Overlay packaging: if this repo carries a debian/ for $pkg under packaging/,
+    # the submodule stays PRISTINE upstream and we stage our debian/ into it at
+    # build time (below). Lets us bump the upstream submodule at our leisure
+    # without maintaining a fork. Fold the overlay's content hash into the cache
+    # key so editing our packaging rebuilds even when the submodule sha is the
+    # same (the dcache is otherwise keyed on submodule HEAD alone).
+    overlay="packaging/$pkg/debian"
+    if [ -d "$overlay" ]; then
+        sha="${sha}-$(find "$overlay" -type f -exec sha1sum {} + | sort | sha1sum | cut -c1-12)"
+    fi
     slot="$DCACHE/$pkg/$sha"
 
     if ls "$slot"/*.deb >/dev/null 2>&1; then
@@ -48,13 +64,22 @@ build_pkg() {
                 cp "$f" "$slot/"
             done
         else
-            # Locate the Debian source within the submodule -- some repos nest it
-            # below the root (e.g. chip-power/chip-power/debian/). src = the dir
-            # containing debian/; out = its parent, where dpkg-buildpackage drops
-            # the .debs.
+            # Locate the Debian source. For an overlay package (packaging/$pkg/
+            # debian/ exists) the submodule is pristine upstream: stage our
+            # debian/ into the submodule root and build there -- this also avoids
+            # find(1) grabbing a vendored submodule's own debian/control. For the
+            # rest, find it within the submodule -- some repos nest it below the
+            # root (e.g. chip-power/chip-power/debian/). src = the dir containing
+            # debian/; out = its parent, where dpkg-buildpackage drops the .debs.
             local control src out
-            control=$(find "packages/$pkg" -path '*/debian/control' -not -path '*/.git/*' | head -1)
-            [ -n "$control" ] || { echo "ERROR: no debian/control under packages/$pkg" >&2; exit 1; }
+            if [ -d "$overlay" ]; then
+                rm -rf "packages/$pkg/debian"
+                cp -r "$overlay" "packages/$pkg/debian"
+                control="packages/$pkg/debian/control"
+            else
+                control=$(find "packages/$pkg" -path '*/debian/control' -not -path '*/.git/*' | head -1)
+                [ -n "$control" ] || { echo "ERROR: no debian/control under packages/$pkg" >&2; exit 1; }
+            fi
             src=$(dirname "$(dirname "$control")")
             out=$(dirname "$src")
 
@@ -79,13 +104,17 @@ build_pkg() {
                 '
             for f in "$out"/*.deb; do cp "$f" "$slot/"; done
             rm -f "$out"/*.deb "$out"/*.buildinfo "$out"/*.changes "$out"/*.dsc "$out"/*.tar.* 2>/dev/null || true
+            # For an overlay package, scrub our injected debian/ + the build tree
+            # so the pristine submodule stays clean for `git submodule update`.
+            # Single -f keeps nested vendored submodules (they carry a .git).
+            [ -d "$overlay" ] && git -C "packages/$pkg" clean -fdx >/dev/null 2>&1 || true
         fi
     fi
 
     cp "$slot"/*.deb "$DEBS/"
 }
 
-build_pkg x-chip-linux-deb kernel
+#build_pkg x-chip-linux-deb kernel
 for pkg in $USERSPACE; do
     build_pkg "$pkg" userspace
 done

@@ -1,0 +1,31 @@
+Source: tic80
+Section: games
+Priority: optional
+Maintainer: Ben Young <computermouth@proton.me>
+Build-Depends: debhelper-compat (= 13),
+               cmake,
+               pkg-config,
+               libsdl2-dev,
+               libglvnd-dev,
+               libglu1-mesa-dev,
+               libasound2-dev,
+# BUILD_WITH_ALL pulls every script backend. Most are vendored submodules, but
+# mruby builds with a host ruby + rake, so include them. If the first CI build
+# complains about a missing tool, add it here (this is the file apt-get build-dep
+# reads).
+               ruby,
+               rake
+Standards-Version: 4.7.0
+Homepage: https://tic80.com/
+
+Package: tic80
+Architecture: any
+Depends: ${shlibs:Depends}, ${misc:Depends}
+Description: TIC-80 tiny fantasy computer
+ TIC-80 is a free and open source fantasy computer for making, playing and
+ sharing tiny games, with built-in code/sprite/map/sfx/music editors.
+ .
+ This build links the system SDL2 and renders through SDLGPU on OpenGL ES 2.0
+ / EGL (mesa + lima on the CHIP's Mali400), unlike upstream's rpi.deb which
+ links the legacy Broadcom GLES blobs and will not load on the CHIP. TIC-80's
+ native 240x136 framebuffer is an exact 2x of the 480x272 PocketCHIP panel.

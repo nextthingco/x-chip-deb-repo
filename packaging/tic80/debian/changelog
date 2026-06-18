@@ -1,0 +1,9 @@
+tic80 (1.1.2837-1) trixie; urgency=low
+
+  * Package TIC-80 v1.1.2837 for armhf from source against the system SDL2 +
+    mesa GLES2/EGL via SDLGPU, for the CHIP's Mali400/lima GPU. Upstream's
+    rpi.deb links the Broadcom GLES blobs and does not run on the CHIP.
+  * Replaces the proprietary PICO-8 in pocket-home's "Play" button; TIC-80's
+    240x136 framebuffer is an exact 2x of the 480x272 PocketCHIP panel.
+
+ -- Ben Young <computermouth@proton.me>  Thu, 18 Jun 2026 04:00:00 -0500
