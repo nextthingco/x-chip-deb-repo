@@ -9,6 +9,10 @@ Build-Depends: debhelper-compat (= 13),
                libglvnd-dev,
                libglu1-mesa-dev,
                libasound2-dev,
+# CMakeLists.txt does find_package(CURL REQUIRED) for the surf/community
+# browser, so libcurl headers must be present even though we only build the
+# local editors.
+               libcurl4-openssl-dev,
 # BUILD_WITH_ALL pulls every script backend. Most are vendored submodules, but
 # mruby builds with a host ruby + rake, so include them. If the first CI build
 # complains about a missing tool, add it here (this is the file apt-get build-dep

@@ -114,7 +114,7 @@ build_pkg() {
     cp "$slot"/*.deb "$DEBS/"
 }
 
-#build_pkg x-chip-linux-deb kernel
+build_pkg x-chip-linux-deb kernel
 for pkg in $USERSPACE; do
     build_pkg "$pkg" userspace
 done
