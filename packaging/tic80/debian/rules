@@ -7,7 +7,18 @@
 %:
 	dh $@ --buildsystem=cmake
 
+# Default integer-scale OFF for the PocketCHIP panel. The 480x272 panel looks like
+# an exact 2x of tic80's 240x136 screen, BUT tic80 integer-scales its 256x144
+# *bordered* framebuffer -- 2x of that (512x288) overflows 480x272, so integer
+# scaling floors to 1x and draws a tiny image in fat borders. With it off tic80
+# stretches to fill the panel (~1.88x, near-square pixels). Upstream persists this
+# in a raw-struct-dump options.dat at a version-hashed path (un-shippable as a
+# config -- see docs/userspace-builds.md), so we flip the build-time default. The
+# grep guard fails the build loudly if upstream renames the macro instead of
+# silently shipping the wrong default. Users can still toggle it in OPTIONS.
 override_dh_auto_configure:
+	grep -q '#define INTEGER_SCALE_DEFAULT true' src/studio/config.c
+	sed -i 's/#define INTEGER_SCALE_DEFAULT true/#define INTEGER_SCALE_DEFAULT false/' src/studio/config.c
 	dh_auto_configure -- \
 		-DCMAKE_BUILD_TYPE=Release \
 		-DBUILD_PRO=OFF \

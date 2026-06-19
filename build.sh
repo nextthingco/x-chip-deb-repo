@@ -115,6 +115,8 @@ build_pkg() {
 }
 
 build_pkg x-chip-linux-deb kernel
+# for overrides, also comment out the one above to skip kernel
+# USERSPACE="PocketCHIP-pocket-home"
 for pkg in $USERSPACE; do
     build_pkg "$pkg" userspace
 done
