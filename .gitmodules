@@ -28,3 +28,9 @@
 [submodule "packages/tic80"]
 	path = packages/tic80
 	url = https://github.com/nesbox/TIC-80
+[submodule "packages/chip-configs"]
+	path = packages/chip-configs
+	url = git@github.com:nextthingco/chip-configs
+[submodule "packages/chip-desktop-configs"]
+	path = packages/chip-desktop-configs
+	url = git@github.com:nextthingco/chip-desktop-configs

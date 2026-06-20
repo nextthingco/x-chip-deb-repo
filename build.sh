@@ -27,7 +27,7 @@ DCACHE="$HERE/dcache"; mkdir -p "$DCACHE"
 # last means every other package is already built + collected in ./debs first.
 # Heads up: while pocket-home fails to build, a CI run of this script also aborts
 # before reprepro, so don't push to CI until it builds clean locally.
-USERSPACE="chip-power chip-hwtest chip-dt-overlays pocketchip-configs pocketchip-batt pocketchip-load pocketchip-onboard tic80 PocketCHIP-pocket-home"
+USERSPACE="chip-power chip-hwtest chip-dt-overlays chip-configs chip-desktop-configs pocketchip-configs pocketchip-batt pocketchip-load pocketchip-onboard tic80 PocketCHIP-pocket-home"
 
 USERSPACE_IMAGE_BUILT=
 
