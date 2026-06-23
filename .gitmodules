@@ -34,3 +34,6 @@
 [submodule "packages/chip-desktop-configs"]
 	path = packages/chip-desktop-configs
 	url = git@github.com:nextthingco/chip-desktop-configs
+[submodule "packages/chip-exit"]
+	path = packages/chip-exit
+	url = git@github.com:nextthingco/chip-exit
